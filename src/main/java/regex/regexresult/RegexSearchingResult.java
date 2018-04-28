@@ -8,6 +8,7 @@ import java.util.concurrent.Semaphore;
 
 public class RegexSearchingResult implements RegexResult {
 
+    private final static boolean DEBUG = false;
     private Semaphore updateEvent = null;
     private List<String> matchingFiles = new ArrayList<>();
     private int analyzedFile = 0;
@@ -72,7 +73,8 @@ public class RegexSearchingResult implements RegexResult {
         if(updateEvent != null && updateEvent.availablePermits() == 0){
             updateEvent.release();
         }
-
+        if(DEBUG)
+            System.out.println("updateEvent released by monitor");
 
         updateObserver();//do nothing if there isn't observers (deprecated, first attempt)
     }
