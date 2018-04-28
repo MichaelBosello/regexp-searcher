@@ -14,22 +14,23 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static int IOERROR = -1;
+    private final static boolean DEBUG = true;
+    private final static int IO_ERROR = -1;
     private RegexUI ui;
     private RegexResult result;
     private String path;
     private String regex;
     private int depth;
     private boolean askUI;
-    Future<Void> failFuture = Future.future();
-    int asyncSpown = 0;
+    private Future<Void> failFuture = Future.future();
+    private int asyncSpawn = 0;
 
     public RegexVerticle(RegexUI ui, RegexResult result) {
         this.ui = ui;
@@ -85,29 +86,49 @@ public class RegexVerticle extends AbstractVerticle {
 
     private void search(){
         ui.start();
-
-        Future<Integer> walker = Future.future();
-        Future<Map<String, Integer>> fileAnalysis = Future.future();
-        asyncSpown++;
-        walkDirectories(path, depth, walker.completer(),fileAnalysis.completer());
-
-        walker.compose( spawns -> {
-            asyncSpown += spawns;
-            asyncSpown--;
-            if(asyncSpown == 0){
-                ui.end();
-            }
-        }, failFuture);
-
-        fileAnalysis.compose( fileMatches -> {
-
-        }, failFuture);
-
+        asyncSpawn++;
+        walkDirectories(path, depth, composeWalker().completer());
     }
 
-    private void walkDirectories(String path, int depth,
-                                 Handler<AsyncResult<Integer>> walkCallback,
-                                 Handler<AsyncResult<Map<String, Integer>>> fileCallback){
+    private Future<Integer> composeWalker(){
+        Future<Integer> walker = Future.future();
+        walker.compose( spawns -> {
+            asyncSpawn += spawns;
+            decreaseAsyncSpawn();
+        }, failFuture);
+        return walker;
+    }
+
+    private void decreaseAsyncSpawn(){
+        asyncSpawn--;
+        if(DEBUG)
+            System.out.println(asyncSpawn);
+        if(asyncSpawn == 0){
+            ui.end();
+        }
+    }
+
+    private Future<Entry<String, Integer>> composeFileAnalysis(){
+        /*
+         *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
+         * */
+        Future<Entry<String, Integer>> fileAnalysis = Future.future();
+        fileAnalysis.compose( fileMatches -> {
+            if(fileMatches.getValue() == IO_ERROR){
+                result.incrementIOException();
+            } else if(fileMatches.getValue() == 0){
+                result.addNonMatchingFile(fileMatches.getKey());
+            }else{
+                result.addMatchingFile(fileMatches.getKey(), fileMatches.getValue());
+            }
+            ui.updateResult(result.getMatchingFiles(), result.matchingFilePercent(),
+                    result.matchMean(), result.getError());
+            decreaseAsyncSpawn();
+        }, failFuture);
+        return fileAnalysis;
+    }
+
+    private void walkDirectories(String path, int depth, Handler<AsyncResult<Integer>> walkCallback){
         vertx.executeBlocking(future -> {
             int subDepth = depth - 1;
             int asyncFunctionSpawned = 0;
@@ -116,11 +137,11 @@ public class RegexVerticle extends AbstractVerticle {
                 for (final File fileEntry : folder.listFiles()) {
                     if (fileEntry.isDirectory()) {
                         if(depth >= 0) {
-                            walkDirectories(fileEntry.getPath(), subDepth, walkCallback, fileCallback);
+                            walkDirectories(fileEntry.getPath(), subDepth, composeWalker().completer());
                             asyncFunctionSpawned++;
                         }
                     } else {
-                        regexCountInFile(fileEntry.getPath(), fileCallback);
+                        regexCountInFile(fileEntry.getPath(), composeFileAnalysis().completer());
                         asyncFunctionSpawned++;
                     }
                 }
@@ -129,9 +150,9 @@ public class RegexVerticle extends AbstractVerticle {
         }, walkCallback);
     }
 
-    private void regexCountInFile(String file, Handler<AsyncResult<Map<String, Integer>>> callback){
+    private void regexCountInFile(String file, Handler<AsyncResult<Entry<String, Integer>>> callback){
         vertx.executeBlocking(future -> {
-            Map<String, Integer> fileMatch = new HashMap<>();
+            Entry<String, Integer> fileMatch;
             try {
                 int match = 0;
                 Pattern pattern = Pattern.compile(regex);
@@ -139,9 +160,9 @@ public class RegexVerticle extends AbstractVerticle {
                 while (matcher.find()) {
                     match++;
                 }
-                fileMatch.put(file, match);
+                fileMatch = new SimpleEntry<>(file, match);
             } catch (IOException e) {
-                fileMatch.put(file, IOERROR);
+                fileMatch = new SimpleEntry<>(file, IO_ERROR);
             }
             future.complete(fileMatch);
         }, callback);
