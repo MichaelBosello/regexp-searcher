@@ -1,8 +1,7 @@
-import forkjoin.forkJoinController;
+import forkjoin.ForkJoinController;
 import regex.regexresult.RegexResult;
 import org.junit.Test;
 import ui.RegexCommandLineUI;
-import ui.RegexUI;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +31,7 @@ public class MainTest {
         for(int regexpIndex = 0; regexpIndex < REGEXP.length; regexpIndex++)
             for (int depth = 0; depth < 3; depth++) {
                 RegexResult result =
-                        new forkJoinController(PATH, REGEXP[regexpIndex], depth, new RegexCommandLineUI())
+                        new ForkJoinController(new RegexCommandLineUI(), PATH, REGEXP[regexpIndex], depth)
                         .start()
                         .getResult();
                 assertEquals("LIST SIZE, REGEXP: " + REGEXP[regexpIndex] + " depth " + depth,

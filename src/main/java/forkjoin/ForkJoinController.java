@@ -11,7 +11,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class forkJoinController implements RegexController {
+public class ForkJoinController implements RegexController {
 
     private final static boolean DEBUG = false;
     private Semaphore updateEvent = new Semaphore(0);
@@ -22,13 +22,13 @@ public class forkJoinController implements RegexController {
     private String regex;
     private int depth;
 
-    public forkJoinController(RegexUI ui) {
+    public ForkJoinController(RegexUI ui) {
         this.ui = ui;
         this.path = ui.askPath();
         this.regex = ui.askRegex();
         this.depth = ui.askDepth();
     }
-    public forkJoinController(String path, String regex, int depth, RegexUI ui) {
+    public ForkJoinController(RegexUI ui, String path, String regex, int depth) {
         this.ui = ui;
         this.path = path;
         this.regex = regex;
