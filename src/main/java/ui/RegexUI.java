@@ -14,7 +14,7 @@ public interface RegexUI {
 
     void updateResult(List<String> files, double percent, double mean, int error);
 
-    void end();
-
     void start();
+
+    void end();
 }

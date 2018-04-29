@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final static int IO_ERROR = -1;
     private RegexUI ui;
     private RegexResult result;
@@ -65,7 +65,8 @@ public class RegexVerticle extends AbstractVerticle {
 
             askPath.compose( path -> {
                 this.path = path;
-
+                if(DEBUG)
+                    System.out.println("callback from ask " + Thread.currentThread().getName());
                 Future<String> askRegex = Future.future();
                 vertx.executeBlocking(future -> {
                     future.complete(ui.askRegex());
@@ -73,7 +74,8 @@ public class RegexVerticle extends AbstractVerticle {
                 return askRegex;
             }).compose( regex -> {
                 this.regex = regex;
-
+                if(DEBUG)
+                    System.out.println("callback from ask " + Thread.currentThread().getName());
                 Future<Integer> askDepth = Future.future();
                 vertx.executeBlocking(future -> {
                     future.complete(ui.askDepth());
@@ -81,6 +83,8 @@ public class RegexVerticle extends AbstractVerticle {
                 return askDepth;
             }).compose( depth -> {
                 this.depth = depth;
+                if(DEBUG)
+                    System.out.println("callback from ask " + Thread.currentThread().getName());
                 search();
             }, failFuture);
         }else{
@@ -97,6 +101,8 @@ public class RegexVerticle extends AbstractVerticle {
     private Future<Integer> composeWalker(){
         Future<Integer> walker = Future.future();
         walker.compose( spawns -> {
+            if(DEBUG)
+                System.out.println("callback from walker " + Thread.currentThread().getName());
             asyncSpawn += spawns;
             decreaseAsyncSpawn();
         }, failFuture);
@@ -106,7 +112,7 @@ public class RegexVerticle extends AbstractVerticle {
     private void decreaseAsyncSpawn(){
         asyncSpawn--;
         if(DEBUG)
-            System.out.println(asyncSpawn);
+            System.out.println("Spawn async call:" + asyncSpawn);
         if(asyncSpawn == 0){
             ui.end();
             endEvent.release();
@@ -119,6 +125,8 @@ public class RegexVerticle extends AbstractVerticle {
          * */
         Future<Entry<String, Integer>> fileAnalysis = Future.future();
         fileAnalysis.compose( fileMatches -> {
+            if(DEBUG)
+                System.out.println("callback from file analysis " + Thread.currentThread().getName());
             if(fileMatches.getValue() == IO_ERROR){
                 result.incrementIOException();
             } else if(fileMatches.getValue() == 0){
@@ -135,6 +143,8 @@ public class RegexVerticle extends AbstractVerticle {
 
     private void walkDirectories(String path, int depth, Handler<AsyncResult<Integer>> walkCallback){
         vertx.executeBlocking(future -> {
+            if(DEBUG)
+                System.out.println("Walker async execution by: " + Thread.currentThread().getName());
             int subDepth = depth - 1;
             int asyncFunctionSpawned = 0;
             File folder = new File(path);
@@ -151,12 +161,16 @@ public class RegexVerticle extends AbstractVerticle {
                     }
                 }
             }
+            if(DEBUG)
+                System.out.println("Walk completed " + Thread.currentThread().getName());
             future.complete(asyncFunctionSpawned);
         }, walkCallback);
     }
 
     private void regexCountInFile(String file, Handler<AsyncResult<Entry<String, Integer>>> callback){
         vertx.executeBlocking(future -> {
+            if(DEBUG)
+                System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
             Entry<String, Integer> fileMatch;
             try {
                 int match = 0;
@@ -169,6 +183,8 @@ public class RegexVerticle extends AbstractVerticle {
             } catch (IOException e) {
                 fileMatch = new SimpleEntry<>(file, IO_ERROR);
             }
+            if(DEBUG)
+                System.out.println("file analysis completed " + Thread.currentThread().getName());
             future.complete(fileMatch);
         }, callback);
     }

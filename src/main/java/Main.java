@@ -1,12 +1,13 @@
 import eventloop.VertxController;
 import forkjoin.ForkJoinController;
 import ui.RegexCommandLineUI;
+import ui.RegexGUI;
 import ui.RegexUI;
 
-public class main {
+public class Main {
 
     public static void main(String args[]) {
-        RegexUI ui = new RegexCommandLineUI();
+        RegexUI ui = new RegexGUI();
         switch(ui.ask("Select computation method:\n(T) Task [Default]\n(E) Eventloop\n(R)Reactive Stream")){
             case "E":
                 new VertxController(ui).start();

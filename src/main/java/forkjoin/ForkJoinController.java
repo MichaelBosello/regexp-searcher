@@ -13,6 +13,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ForkJoinController implements RegexController {
 
+    private final static int UPDATE_SLEEP = 300;
     private final static boolean DEBUG = false;
     private Semaphore updateEvent = new Semaphore(0);
     private ExecutorService updateExecutor = Executors.newSingleThreadExecutor();
@@ -58,6 +59,7 @@ public class ForkJoinController implements RegexController {
                     System.out.println("updateEvent acquired");
                     RegexUpdate update = result.getUpdate();
                     ui.updateResult(update.getFileList(), update.getPercent(), update.getMean(), update.getError());
+                    Thread.sleep(UPDATE_SLEEP);
                 } catch (InterruptedException e) {
                     interrupted = true;
                     if(DEBUG)

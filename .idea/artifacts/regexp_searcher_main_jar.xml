@@ -1,0 +1,24 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="regexp-searcher.main:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/regexp_searcher_main_jar</output-path>
+    <root id="archive" name="regexp-searcher.main.jar">
+      <element id="module-output" name="regexp-searcher.main" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec/4.1.19.Final/ad4d4309c5b011036ca4df6aca190983d75c6b19/netty-codec-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport/4.1.19.Final/4f26f51b86dc1ab19621eb2ac39f1a63682f17f2/netty-transport-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec-socks/4.1.19.Final/c84f0540fceccae979d7aeb17b1fa0057c038df9/netty-codec-socks-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.3/ea9b6fc7bc3ccba9777b0827091f9aa1f8580371/jackson-core-2.9.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.9.0/7c10d545325e3a6e72e06381afe469fd40eb701/jackson-annotations-2.9.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec-dns/4.1.19.Final/8b0a7fd3c67e8bd5e3d347f9bb200ae0aaa5c1b7/netty-codec-dns-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-buffer/4.1.19.Final/65abf40a28ce4f52dd763d0b4f740066a87b5c9e/netty-buffer-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-common/4.1.19.Final/b281916c11d3eeec5e839677ec4f2eb9d7586928/netty-common-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-handler/4.1.19.Final/9c784510bc6f81177c4f2c2956144438863cdac4/netty-handler-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec-http/4.1.19.Final/f7edff289d10cc03cdb97ad99e2722f9d61ffdc3/netty-codec-http-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-handler-proxy/4.1.19.Final/47c7f7977cea190351962bee726f663eb6488a22/netty-handler-proxy-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-resolver-dns/4.1.19.Final/67a1e265bcbc49160417c81fdf2fdc50ea423727/netty-resolver-dns-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.vertx/vertx-core/3.5.1/863b28bd60ebcc6820beb1dc7f44b777936e6ad3/vertx-core-3.5.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.3/193b96ef555b2f2573b576887ba9a93e4bf48e8c/jackson-databind-2.9.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-resolver/4.1.19.Final/7d97be8b3fb195f9d94d9a4afcadef25e08bde2/netty-resolver-4.1.19.Final.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec-http2/4.1.19.Final/665bd06aed74b3f5592465dda2e00e3d03f41048/netty-codec-http2-4.1.19.Final.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

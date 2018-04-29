@@ -1,7 +1,10 @@
 plugins {
+    id 'application'
     id 'java'
     id 'idea'
 }
+
+mainClassName = "Main"
 
 version '1.0'
 
@@ -9,6 +12,15 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+}
+
+/*
+*
+*  run from IDE or with '$ ./gradlew run' to have dependencies
+*
+* */
+run {
+    standardInput = System.in
 }
 
 dependencies {
