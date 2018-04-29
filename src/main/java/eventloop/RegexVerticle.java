@@ -16,6 +16,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +26,7 @@ public class RegexVerticle extends AbstractVerticle {
     private final static int IO_ERROR = -1;
     private RegexUI ui;
     private RegexResult result;
+    private Semaphore endEvent;
     private String path;
     private String regex;
     private int depth;
@@ -32,15 +34,17 @@ public class RegexVerticle extends AbstractVerticle {
     private Future<Void> failFuture = Future.future();
     private int asyncSpawn = 0;
 
-    public RegexVerticle(RegexUI ui, RegexResult result) {
+    public RegexVerticle(RegexUI ui, RegexResult result, Semaphore endEvent) {
         this.ui = ui;
         this.result = result;
+        this.endEvent = endEvent;
         askUI = true;
     }
 
-    public RegexVerticle(RegexUI ui, RegexResult result, String path, String regex, int depth) {
+    public RegexVerticle(RegexUI ui, RegexResult result, Semaphore endEvent, String path, String regex, int depth) {
         this.ui = ui;
         this.result = result;
+        this.endEvent = endEvent;
         this.path = path;
         this.regex = regex;
         this.depth = depth;
@@ -105,6 +109,7 @@ public class RegexVerticle extends AbstractVerticle {
             System.out.println(asyncSpawn);
         if(asyncSpawn == 0){
             ui.end();
+            endEvent.release();
         }
     }
 
@@ -136,7 +141,7 @@ public class RegexVerticle extends AbstractVerticle {
             if(folder.listFiles() != null) {
                 for (final File fileEntry : folder.listFiles()) {
                     if (fileEntry.isDirectory()) {
-                        if(depth >= 0) {
+                        if(subDepth >= 0) {
                             walkDirectories(fileEntry.getPath(), subDepth, composeWalker().completer());
                             asyncFunctionSpawned++;
                         }
