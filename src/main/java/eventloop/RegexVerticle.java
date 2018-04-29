@@ -1,9 +1,7 @@
 package eventloop;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import regex.regexresult.RegexResult;
 import ui.RegexUI;
 
@@ -15,6 +13,8 @@ import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     private final static int IO_ERROR = -1;
     private RegexUI ui;
     private RegexResult result;
@@ -32,7 +32,7 @@ public class RegexVerticle extends AbstractVerticle {
     private int depth;
     private boolean askUI;
     private Future<Void> failFuture = Future.future();
-    private int asyncSpawn = 0;
+    private Map<Integer, Integer> asyncCall = new HashMap<>();
 
     public RegexVerticle(RegexUI ui, RegexResult result, Semaphore endEvent) {
         this.ui = ui;
@@ -94,81 +94,99 @@ public class RegexVerticle extends AbstractVerticle {
 
     private void search(){
         ui.start();
-        asyncSpawn++;
-        walkDirectories(path, depth, composeWalker().completer());
+        asyncCall.put(0,1);
+        walkDirectories(path, depth, 0);
     }
 
-    private Future<Integer> composeWalker(){
-        Future<Integer> walker = Future.future();
+    private Future<AsyncSpawnTracker> composeWalkerFuture(){
+        Future<AsyncSpawnTracker> walker = Future.future();
         walker.compose( spawns -> {
             if(DEBUG)
                 System.out.println("callback from walker " + Thread.currentThread().getName());
-            asyncSpawn += spawns;
-            decreaseAsyncSpawn();
+            trackAsyncSpawn(spawns);
         }, failFuture);
         return walker;
     }
 
-    private void decreaseAsyncSpawn(){
-        asyncSpawn--;
-        if(DEBUG)
-            System.out.println("Spawn async call:" + asyncSpawn);
-        if(asyncSpawn == 0){
+    private void trackAsyncSpawn(AsyncSpawnTracker tracker){
+        if(!asyncCall.containsKey(tracker.getFunctionID())){
+            asyncCall.put(tracker.getFunctionID(),tracker.getAsyncSpawn());
+        }else{
+            asyncCall.replace(tracker.getFunctionID(),
+                    asyncCall.get(tracker.getFunctionID()) + tracker.getAsyncSpawn());
+        }
+        if(!asyncCall.containsKey(tracker.getParentID())){
+            asyncCall.put(tracker.getParentID(), -1);
+        }else{
+            asyncCall.replace(tracker.getParentID(),asyncCall.get(tracker.getParentID()) - 1);
+        }
+
+        boolean end = true;
+       for(Entry<Integer, Integer> remainedSpawn : asyncCall.entrySet()){
+           if(remainedSpawn.getValue() != 0){
+               end = false;
+           }
+           if(DEBUG)
+               System.out.println("Remain spawn:" + remainedSpawn);
+       }
+        if(end){
             ui.end();
             endEvent.release();
         }
     }
 
-    private Future<Entry<String, Integer>> composeFileAnalysis(){
+    private Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
         /*
          *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
          * */
-        Future<Entry<String, Integer>> fileAnalysis = Future.future();
+        Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> fileAnalysis = Future.future();
         fileAnalysis.compose( fileMatches -> {
             if(DEBUG)
                 System.out.println("callback from file analysis " + Thread.currentThread().getName());
-            if(fileMatches.getValue() == IO_ERROR){
+            if(fileMatches.getKey().getValue() == IO_ERROR){
                 result.incrementIOException();
-            } else if(fileMatches.getValue() == 0){
-                result.addNonMatchingFile(fileMatches.getKey());
+            } else if(fileMatches.getKey().getValue() == 0){
+                result.addNonMatchingFile(fileMatches.getKey().getKey());
             }else{
-                result.addMatchingFile(fileMatches.getKey(), fileMatches.getValue());
+                result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
             }
             ui.updateResult(result.getMatchingFiles(), result.matchingFilePercent(),
                     result.matchMean(), result.getError());
-            decreaseAsyncSpawn();
+            trackAsyncSpawn(fileMatches.getValue());
         }, failFuture);
         return fileAnalysis;
     }
 
-    private void walkDirectories(String path, int depth, Handler<AsyncResult<Integer>> walkCallback){
+    private void walkDirectories(String path, int depth, int parent){
         vertx.executeBlocking(future -> {
+            final int myself = parent + 1;
             if(DEBUG)
                 System.out.println("Walker async execution by: " + Thread.currentThread().getName());
             int subDepth = depth - 1;
-            int asyncFunctionSpawned = 0;
+            AsyncSpawnTracker asyncFunctionSpawned = new AsyncSpawnTracker(myself,parent);
             File folder = new File(path);
             if(folder.listFiles() != null) {
                 for (final File fileEntry : folder.listFiles()) {
                     if (fileEntry.isDirectory()) {
                         if(subDepth >= 0) {
-                            walkDirectories(fileEntry.getPath(), subDepth, composeWalker().completer());
-                            asyncFunctionSpawned++;
+                            walkDirectories(fileEntry.getPath(), subDepth, myself);
+                            asyncFunctionSpawned.incrementAsyncSpawn();
                         }
                     } else {
-                        regexCountInFile(fileEntry.getPath(), composeFileAnalysis().completer());
-                        asyncFunctionSpawned++;
+                        regexCountInFile(fileEntry.getPath(), myself);
+                        asyncFunctionSpawned.incrementAsyncSpawn();
                     }
                 }
             }
             if(DEBUG)
                 System.out.println("Walk completed " + Thread.currentThread().getName());
             future.complete(asyncFunctionSpawned);
-        }, walkCallback);
+        }, false, composeWalkerFuture().completer());
     }
 
-    private void regexCountInFile(String file, Handler<AsyncResult<Entry<String, Integer>>> callback){
+    private void regexCountInFile(String file, int parent){
         vertx.executeBlocking(future -> {
+            final int myself = parent + 1;
             if(DEBUG)
                 System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
             Entry<String, Integer> fileMatch;
@@ -185,8 +203,8 @@ public class RegexVerticle extends AbstractVerticle {
             }
             if(DEBUG)
                 System.out.println("file analysis completed " + Thread.currentThread().getName());
-            future.complete(fileMatch);
-        }, callback);
+            future.complete(new SimpleEntry<>(fileMatch, new AsyncSpawnTracker(myself, parent)));
+        }, false, composeFileAnalysisFuture().completer());
     }
 
 
@@ -196,5 +214,37 @@ public class RegexVerticle extends AbstractVerticle {
         ByteBuffer bbuf = channel.map(FileChannel.MapMode.READ_ONLY, 0, (int)channel.size());
         CharBuffer cbuf = Charset.forName("8859_1").newDecoder().decode(bbuf);
         return cbuf;
+    }
+
+    private class AsyncSpawnTracker{
+        private final int functionID;
+        private final int parentID;
+        private int asyncSpawn;
+
+        public AsyncSpawnTracker(int functionID, int parentID, int asyncSpawn) {
+            this.functionID = functionID;
+            this.parentID = parentID;
+            this.asyncSpawn = asyncSpawn;
+        }
+
+        public AsyncSpawnTracker(int functionID, int parentID) {
+            this(functionID, parentID, 0);
+        }
+
+        public void incrementAsyncSpawn() {
+            asyncSpawn++;
+        }
+
+        public int getFunctionID() {
+            return functionID;
+        }
+
+        public int getParentID() {
+            return parentID;
+        }
+
+        public int getAsyncSpawn() {
+            return asyncSpawn;
+        }
     }
 }

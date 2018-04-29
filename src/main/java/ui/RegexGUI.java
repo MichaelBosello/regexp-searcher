@@ -105,7 +105,6 @@ public class RegexGUI implements RegexUI{
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println(responsePath);
         return responsePath;
     }
 
