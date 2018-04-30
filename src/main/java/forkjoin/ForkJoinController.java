@@ -1,9 +1,9 @@
 package forkjoin;
 
 import forkjoin.action.RegexWalkerAction;
-import regex.regexresult.RegexResult;
-import regex.regexresult.RegexUpdate;
-import regex.regexresult.RegexSearchingResult;
+import regex.regexresult.Result;
+import regex.regexresult.Update;
+import regex.regexresult.SearchingResult;
 import ui.RegexUI;
 import regex.RegexController;
 
@@ -17,7 +17,7 @@ public class ForkJoinController implements RegexController {
     private final static boolean DEBUG = false;
     private Semaphore updateEvent = new Semaphore(0);
     private ExecutorService updateExecutor = Executors.newSingleThreadExecutor();
-    private RegexResult result = new RegexSearchingResult(updateEvent);
+    private Result result = new SearchingResult(updateEvent);
     private RegexUI ui;
     private String path;
     private String regex;
@@ -37,7 +37,7 @@ public class ForkJoinController implements RegexController {
     }
 
     @Override
-    public RegexResult getResult() {
+    public Result getResult() {
         return result;
     }
 
@@ -57,7 +57,7 @@ public class ForkJoinController implements RegexController {
                     updateEvent.acquire();
                     if(DEBUG)
                     System.out.println("updateEvent acquired");
-                    RegexUpdate update = result.getUpdate();
+                    Update update = result.getUpdate();
                     ui.updateResult(update.getFileList(), update.getPercent(), update.getMean(), update.getError());
                     Thread.sleep(UPDATE_SLEEP);
                 } catch (InterruptedException e) {

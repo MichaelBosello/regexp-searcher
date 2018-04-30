@@ -1,10 +1,10 @@
 package regex;
 
-import regex.regexresult.RegexResult;
+import regex.regexresult.Result;
 
 public interface RegexController {
 
     RegexController start();
 
-    RegexResult getResult();
+    Result getResult();
 }

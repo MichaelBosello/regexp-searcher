@@ -2,7 +2,7 @@ package regex.regexresult;
 
 import java.util.List;
 
-public interface RegexUpdate {
+public interface Update {
 
     List<String> getFileList();
 

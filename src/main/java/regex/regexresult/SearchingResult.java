@@ -6,7 +6,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
-public class RegexSearchingResult implements RegexResult {
+public class SearchingResult implements Result {
 
     private final static boolean DEBUG = false;
     private Semaphore updateEvent = null;
@@ -15,9 +15,9 @@ public class RegexSearchingResult implements RegexResult {
     private int totalMatches = 0;
     private int exception = 0;
 
-    public RegexSearchingResult() {}
+    public SearchingResult() {}
 
-    public RegexSearchingResult(Semaphore updateEvent) {
+    public SearchingResult(Semaphore updateEvent) {
         this.updateEvent = updateEvent;
     }
 
@@ -42,8 +42,8 @@ public class RegexSearchingResult implements RegexResult {
     }
 
     @Override
-    public synchronized RegexUpdate getUpdate(){
-        return new RegexUpdateStruct(getMatchingFiles(), matchingFilePercent(), matchMean(), getError());
+    public synchronized Update getUpdate(){
+        return new UpdateStruct(getMatchingFiles(), matchingFilePercent(), matchMean(), getError());
     }
 
     @Override

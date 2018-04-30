@@ -3,17 +3,15 @@ package eventloop;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import regex.RegexController;
-import regex.regexresult.RegexResult;
-import regex.regexresult.RegexSearchingResult;
+import regex.regexresult.Result;
+import regex.regexresult.SearchingResult;
 import ui.RegexUI;
 
 import java.util.concurrent.Semaphore;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class VertxController implements RegexController {
 
-    private final RegexResult result = new RegexSearchingResult();
+    private final Result result = new SearchingResult();
     private final Verticle verticle;
     private final Semaphore endEvent = new Semaphore(0);
 
@@ -41,7 +39,7 @@ public class VertxController implements RegexController {
     }
 
     @Override
-    public RegexResult getResult() {
+    public Result getResult() {
         return result;
     }
 }

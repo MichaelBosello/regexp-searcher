@@ -2,30 +2,26 @@ package eventloop;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import regex.regexresult.RegexResult;
+import regex.regexresult.Result;
 import ui.RegexUI;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static utility.FileUtility.countMatch;
+import static utility.FileUtility.walkDirectory;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final static int IO_ERROR = -1;
     private RegexUI ui;
-    private RegexResult result;
+    private Result result;
     private Semaphore endEvent;
     private String path;
     private String regex;
@@ -34,14 +30,14 @@ public class RegexVerticle extends AbstractVerticle {
     private Future<Void> failFuture = Future.future();
     private Map<Integer, Integer> asyncCall = new HashMap<>();
 
-    public RegexVerticle(RegexUI ui, RegexResult result, Semaphore endEvent) {
+    public RegexVerticle(RegexUI ui, Result result, Semaphore endEvent) {
         this.ui = ui;
         this.result = result;
         this.endEvent = endEvent;
         askUI = true;
     }
 
-    public RegexVerticle(RegexUI ui, RegexResult result, Semaphore endEvent, String path, String regex, int depth) {
+    public RegexVerticle(RegexUI ui, Result result, Semaphore endEvent, String path, String regex, int depth) {
         this.ui = ui;
         this.result = result;
         this.endEvent = endEvent;
@@ -98,6 +94,48 @@ public class RegexVerticle extends AbstractVerticle {
         walkDirectories(path, depth, 0);
     }
 
+    private void walkDirectories(String path, int depth, int parent){
+        vertx.executeBlocking(future -> {
+            final int myself = parent + 1;
+            if(DEBUG)
+                System.out.println("Walker async execution by: " + Thread.currentThread().getName());
+            int subDepth = depth - 1;
+            AsyncSpawnTracker asyncFunctionSpawned = new AsyncSpawnTracker(myself,parent);
+            File folder = new File(path);
+            walkDirectory(folder, (directory) -> {
+                if(subDepth >= 0) {
+                    walkDirectories(directory.getPath(), subDepth, myself);
+                    asyncFunctionSpawned.incrementAsyncSpawn();
+                }
+            }, (file) -> {
+                regexCountInFile(file.getPath(), myself);
+                asyncFunctionSpawned.incrementAsyncSpawn();
+            });
+
+            if(DEBUG)
+                System.out.println("Walk completed " + Thread.currentThread().getName());
+            future.complete(asyncFunctionSpawned);
+        }, false, composeWalkerFuture().completer());
+    }
+
+    private void regexCountInFile(String file, int parent){
+        vertx.executeBlocking(future -> {
+            final int myself = parent + 1;
+            if(DEBUG)
+                System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
+            Entry<String, Integer> fileMatch;
+            try {
+                int match = countMatch(regex, file);
+                fileMatch = new SimpleEntry<>(file, match);
+            } catch (IOException e) {
+                fileMatch = new SimpleEntry<>(file, IO_ERROR);
+            }
+            if(DEBUG)
+                System.out.println("file analysis completed " + Thread.currentThread().getName());
+            future.complete(new SimpleEntry<>(fileMatch, new AsyncSpawnTracker(myself, parent)));
+        }, false, composeFileAnalysisFuture().completer());
+    }
+
     private Future<AsyncSpawnTracker> composeWalkerFuture(){
         Future<AsyncSpawnTracker> walker = Future.future();
         walker.compose( spawns -> {
@@ -106,6 +144,28 @@ public class RegexVerticle extends AbstractVerticle {
             trackAsyncSpawn(spawns);
         }, failFuture);
         return walker;
+    }
+
+    private Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
+        /*
+         *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
+         * */
+        Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> fileAnalysis = Future.future();
+        fileAnalysis.compose( fileMatches -> {
+            if(DEBUG)
+                System.out.println("callback from file analysis " + Thread.currentThread().getName());
+            if(fileMatches.getKey().getValue() == IO_ERROR){
+                result.incrementIOException();
+            } else if(fileMatches.getKey().getValue() == 0){
+                result.addNonMatchingFile(fileMatches.getKey().getKey());
+            }else{
+                result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
+            }
+            ui.updateResult(result.getMatchingFiles(), result.matchingFilePercent(),
+                    result.matchMean(), result.getError());
+            trackAsyncSpawn(fileMatches.getValue());
+        }, failFuture);
+        return fileAnalysis;
     }
 
     private void trackAsyncSpawn(AsyncSpawnTracker tracker){
@@ -135,86 +195,7 @@ public class RegexVerticle extends AbstractVerticle {
         }
     }
 
-    private Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
-        /*
-         *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
-         * */
-        Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> fileAnalysis = Future.future();
-        fileAnalysis.compose( fileMatches -> {
-            if(DEBUG)
-                System.out.println("callback from file analysis " + Thread.currentThread().getName());
-            if(fileMatches.getKey().getValue() == IO_ERROR){
-                result.incrementIOException();
-            } else if(fileMatches.getKey().getValue() == 0){
-                result.addNonMatchingFile(fileMatches.getKey().getKey());
-            }else{
-                result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
-            }
-            ui.updateResult(result.getMatchingFiles(), result.matchingFilePercent(),
-                    result.matchMean(), result.getError());
-            trackAsyncSpawn(fileMatches.getValue());
-        }, failFuture);
-        return fileAnalysis;
-    }
 
-    private void walkDirectories(String path, int depth, int parent){
-        vertx.executeBlocking(future -> {
-            final int myself = parent + 1;
-            if(DEBUG)
-                System.out.println("Walker async execution by: " + Thread.currentThread().getName());
-            int subDepth = depth - 1;
-            AsyncSpawnTracker asyncFunctionSpawned = new AsyncSpawnTracker(myself,parent);
-            File folder = new File(path);
-            if(folder.listFiles() != null) {
-                for (final File fileEntry : folder.listFiles()) {
-                    if (fileEntry.isDirectory()) {
-                        if(subDepth >= 0) {
-                            walkDirectories(fileEntry.getPath(), subDepth, myself);
-                            asyncFunctionSpawned.incrementAsyncSpawn();
-                        }
-                    } else {
-                        regexCountInFile(fileEntry.getPath(), myself);
-                        asyncFunctionSpawned.incrementAsyncSpawn();
-                    }
-                }
-            }
-            if(DEBUG)
-                System.out.println("Walk completed " + Thread.currentThread().getName());
-            future.complete(asyncFunctionSpawned);
-        }, false, composeWalkerFuture().completer());
-    }
-
-    private void regexCountInFile(String file, int parent){
-        vertx.executeBlocking(future -> {
-            final int myself = parent + 1;
-            if(DEBUG)
-                System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
-            Entry<String, Integer> fileMatch;
-            try {
-                int match = 0;
-                Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(fromFile(file));
-                while (matcher.find()) {
-                    match++;
-                }
-                fileMatch = new SimpleEntry<>(file, match);
-            } catch (IOException e) {
-                fileMatch = new SimpleEntry<>(file, IO_ERROR);
-            }
-            if(DEBUG)
-                System.out.println("file analysis completed " + Thread.currentThread().getName());
-            future.complete(new SimpleEntry<>(fileMatch, new AsyncSpawnTracker(myself, parent)));
-        }, false, composeFileAnalysisFuture().completer());
-    }
-
-
-    private CharSequence fromFile(String filename) throws IOException {
-        FileInputStream input = new FileInputStream(filename);
-        FileChannel channel = input.getChannel();
-        ByteBuffer bbuf = channel.map(FileChannel.MapMode.READ_ONLY, 0, (int)channel.size());
-        CharBuffer cbuf = Charset.forName("8859_1").newDecoder().decode(bbuf);
-        return cbuf;
-    }
 
     private class AsyncSpawnTracker{
         private final int functionID;

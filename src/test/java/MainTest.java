@@ -1,7 +1,7 @@
 import eventloop.VertxController;
 import forkjoin.ForkJoinController;
 import regex.RegexController;
-import regex.regexresult.RegexResult;
+import regex.regexresult.Result;
 import org.junit.Test;
 import ui.RegexCommandLineUI;
 
@@ -42,7 +42,7 @@ public class MainTest {
     private void regexTest(BiFunction<String, Integer, RegexController> controllerFabric){
         for(int regexIndex = 0; regexIndex < REGEX.length; regexIndex++)
             for (int depth = 0; depth < 3; depth++) {
-                RegexResult result =
+                Result result =
                         controllerFabric.apply(REGEX[regexIndex], depth)
                                 .start()
                                 .getResult();

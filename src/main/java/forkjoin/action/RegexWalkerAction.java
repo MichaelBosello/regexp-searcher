@@ -1,21 +1,23 @@
 package forkjoin.action;
 
-import regex.regexresult.RegexResult;
+import regex.regexresult.Result;
 
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.RecursiveAction;
 
+import static utility.FileUtility.walkDirectory;
+
 public class RegexWalkerAction extends RecursiveAction {
 
     private final boolean DEBUG = false;
-    File folder;
-    String regex;
-    RegexResult collector;
-    int depth;
+    private File folder;
+    private String regex;
+    private Result collector;
+    private int depth;
 
-    public RegexWalkerAction(String path, String regex, RegexResult collector, int depth) {
+    public RegexWalkerAction(String path, String regex, Result collector, int depth) {
         this.folder = new File(path);
         this.regex = regex;
         this.collector = collector;
@@ -26,23 +28,19 @@ public class RegexWalkerAction extends RecursiveAction {
     protected void compute() {
         int subDepth = depth - 1;
         List<RecursiveAction> forks = new LinkedList<>();
-        if(folder.listFiles() != null) {
-            for (final File fileEntry : folder.listFiles()) {
-                if (fileEntry.isDirectory()) {
-                    if(subDepth >= 0) {
-                        if(DEBUG)
-                            System.out.println("[DEBUG] spawn new directory fork with path: "
-                                    + fileEntry.getPath() + " depth: " + subDepth );
-                        forks.add(new RegexWalkerAction(fileEntry.getPath(), regex, collector, subDepth));
-                    }
-                } else {
-                    if(DEBUG)
-                        System.out.println("[DEBUG] spawn new file fork with filepath: "
-                                + fileEntry.getPath() );
-                    forks.add(new CountRegexInFileAction(fileEntry.getPath(), regex, collector));
-                }
+        walkDirectory(folder, (directory) -> {
+            if(subDepth >= 0) {
+                if(DEBUG)
+                    System.out.println("[DEBUG] spawn new directory fork with path: "
+                            + directory.getPath() + " depth: " + subDepth );
+                forks.add(new RegexWalkerAction(directory.getPath(), regex, collector, subDepth));
             }
-        }
+        }, (file) -> {
+            if(DEBUG)
+                System.out.println("[DEBUG] spawn new file fork with filepath: "
+                        + file.getPath() );
+            forks.add(new CountRegexInFileAction(file.getPath(), regex, collector));
+        });
         invokeAll(forks);
     }
 }

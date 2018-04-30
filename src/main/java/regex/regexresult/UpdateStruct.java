@@ -2,13 +2,13 @@ package regex.regexresult;
 
 import java.util.List;
 
-public class RegexUpdateStruct implements RegexUpdate{
+public class UpdateStruct implements Update {
     List<String> fileList;
     double percent;
     double mean;
     int error;
 
-    public RegexUpdateStruct(List<String> fileList, double percent, double mean, int error) {
+    public UpdateStruct(List<String> fileList, double percent, double mean, int error) {
         this.fileList = fileList;
         this.percent = percent;
         this.mean = mean;
