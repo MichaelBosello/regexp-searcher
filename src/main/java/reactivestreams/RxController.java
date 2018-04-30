@@ -7,6 +7,8 @@ import regex.regexresult.SearchingResult;
 import regex.regexresult.Update;
 import ui.RegexUI;
 
+import java.util.concurrent.Semaphore;
+
 public class RxController implements RegexController {
 
     private Result result = new SearchingResult();
@@ -35,15 +37,31 @@ public class RxController implements RegexController {
 
     @Override
     public RegexController start(){
+        Semaphore endEvent = new Semaphore(0);
         ui.start();
         ConnectableFlowable<Update> matchObservable = new RegexStream(path, regex, result, depth).matchStream().publish();
         matchObservable.subscribe((update) -> {
             ui.updateResult(update.getNotConsumedFiles(),update.getPercent(),update.getMean(),update.getError());
-        });
-        matchObservable.doOnComplete( () -> {
+        },(Throwable t) -> {
+            System.out.println("error  " + t);
+        },() -> {
             ui.end();
+            endEvent.release();
         });
         matchObservable.connect();
+
+        //not working, end function declared with subscribe instead
+        /*
+        matchObservable.doOnComplete( () -> {
+            ui.end();
+            endEvent.release();
+        });
+        */
+        try {
+            endEvent.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return this;
     }
 }
