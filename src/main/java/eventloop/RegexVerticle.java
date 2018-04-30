@@ -3,6 +3,7 @@ package eventloop;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import regex.regexresult.Result;
+import regex.regexresult.Update;
 import ui.RegexUI;
 
 import java.io.File;
@@ -18,7 +19,7 @@ import static utility.FileUtility.walkDirectory;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     private final static int IO_ERROR = -1;
     private RegexUI ui;
     private Result result;
@@ -98,16 +99,21 @@ public class RegexVerticle extends AbstractVerticle {
         vertx.executeBlocking(future -> {
             final int myself = parent + 1;
             if(DEBUG)
-                System.out.println("Walker async execution by: " + Thread.currentThread().getName());
+                System.out.println("Walker async execution by: " + Thread.currentThread().getName() +
+                                    " for path: " + path);
             int subDepth = depth - 1;
             AsyncSpawnTracker asyncFunctionSpawned = new AsyncSpawnTracker(myself,parent);
             File folder = new File(path);
             walkDirectory(folder, (directory) -> {
                 if(subDepth >= 0) {
+                    if(DEBUG)
+                        System.out.println("walker spawn new path: " + directory.getPath());
                     walkDirectories(directory.getPath(), subDepth, myself);
                     asyncFunctionSpawned.incrementAsyncSpawn();
                 }
             }, (file) -> {
+                if(DEBUG)
+                    System.out.println("walker spawn new file: " + file.getPath());
                 regexCountInFile(file.getPath(), myself);
                 asyncFunctionSpawned.incrementAsyncSpawn();
             });
@@ -153,7 +159,8 @@ public class RegexVerticle extends AbstractVerticle {
         Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> fileAnalysis = Future.future();
         fileAnalysis.compose( fileMatches -> {
             if(DEBUG)
-                System.out.println("callback from file analysis " + Thread.currentThread().getName());
+                System.out.println("callback from file analysis " + Thread.currentThread().getName() +
+                                    "for file: " + fileMatches.getKey().getKey());
             if(fileMatches.getKey().getValue() == IO_ERROR){
                 result.incrementIOException();
             } else if(fileMatches.getKey().getValue() == 0){
@@ -161,8 +168,9 @@ public class RegexVerticle extends AbstractVerticle {
             }else{
                 result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
             }
-            ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
-                    result.matchMean(), result.getError());
+            Update update = result.getUpdate();
+            ui.updateResult(update.getNotConsumedFiles(), update.getPercent(),
+                    update.getMean(), update.getError());
             trackAsyncSpawn(fileMatches.getValue());
         }, failFuture);
         return fileAnalysis;
