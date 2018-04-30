@@ -10,19 +10,19 @@ public class MillisecondStopWatch implements StopWatch{
     }
 
     @Override
-    public void start(){
+    public synchronized void start(){
         running = true;
         startTime = System.currentTimeMillis();
     }
 
     @Override
-    public void stop(){
+    public synchronized void stop(){
         startTime = getTime();
         running = false;
     }
 
     @Override
-    public long getTime(){
+    public synchronized long getTime(){
         if (running){
             return 	System.currentTimeMillis() - startTime;
         } else {

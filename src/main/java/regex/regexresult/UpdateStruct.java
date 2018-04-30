@@ -4,12 +4,14 @@ import java.util.List;
 
 public class UpdateStruct implements Update {
     List<String> fileList;
+    List<String> notConsumed;
     double percent;
     double mean;
     int error;
 
-    public UpdateStruct(List<String> fileList, double percent, double mean, int error) {
+    public UpdateStruct(List<String> fileList, List<String> notConsumed, double percent, double mean, int error) {
         this.fileList = fileList;
+        this.notConsumed = notConsumed;
         this.percent = percent;
         this.mean = mean;
         this.error = error;
@@ -18,6 +20,10 @@ public class UpdateStruct implements Update {
     @Override
     public List<String> getFileList() {
         return fileList;
+    }
+    @Override
+    public List<String> getNotConsumedFiles() {
+        return notConsumed;
     }
     @Override
     public double getPercent() {

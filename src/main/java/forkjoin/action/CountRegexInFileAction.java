@@ -16,9 +16,9 @@ import static utility.FileUtility.countMatch;
 
 public class CountRegexInFileAction extends RecursiveAction {
 
-    String file;
-    String regex;
-    Result collector;
+    protected String file;
+    protected String regex;
+    protected Result collector;
 
     public CountRegexInFileAction(String file, String regex, Result collector) {
         this.file = file;

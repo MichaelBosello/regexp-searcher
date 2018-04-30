@@ -5,20 +5,30 @@ import utility.StopWatch;
 
 import javax.swing.*;
 import java.awt.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RegexGUI implements RegexUI{
 
-    private List<String> showedFiles = new LinkedList<>();
+    private final static int REFRESH_SLEEP = 250;
+    private ScheduledExecutorService updateExecutor = Executors.newSingleThreadScheduledExecutor();
+    private Runnable runUpdate;
+    private Semaphore updateRace = new Semaphore(1);
+    private List<String> toAppend = new LinkedList<>();
+    private int ioError = 0;
+    private int matching = 0;
+    private double percent = 0;
+    private double mean = 0;
     private StopWatch watch = new MillisecondStopWatch();
     private JFrame frame;
-    private JTextField matching;
-    private JTextField percent;
-    private JTextField mean;
-    private JTextField ioError;
+    private JTextField matchingField;
+    private JTextField percentField;
+    private JTextField meanField;
+    private JTextField ioErrorField;
     private JTextArea fileList;
     private Dimension textFieldDimension = new Dimension(150,25);
 
@@ -33,24 +43,24 @@ public class RegexGUI implements RegexUI{
                 JPanel stats = new JPanel(new FlowLayout());
 
                 stats.add(new JLabel("Matching file: "));
-                matching = new JTextField("0");
-                matching.setPreferredSize(textFieldDimension);
-                stats.add(matching);
+                matchingField = new JTextField("0");
+                matchingField.setPreferredSize(textFieldDimension);
+                stats.add(matchingField);
 
                 stats.add(new JLabel("Percent: "));
-                percent = new JTextField("0");
-                percent.setPreferredSize(textFieldDimension);
-                stats.add(percent);
+                percentField = new JTextField("0");
+                percentField.setPreferredSize(textFieldDimension);
+                stats.add(percentField);
 
                 stats.add(new JLabel("Mean: "));
-                mean = new JTextField("0");
-                mean.setPreferredSize(textFieldDimension);
-                stats.add(mean, BorderLayout.CENTER);
+                meanField = new JTextField("0");
+                meanField.setPreferredSize(textFieldDimension);
+                stats.add(meanField, BorderLayout.CENTER);
 
                 stats.add(new JLabel("IO Error: "));
-                ioError = new JTextField("0");
-                ioError.setPreferredSize(textFieldDimension);
-                stats.add(ioError);
+                ioErrorField = new JTextField("0");
+                ioErrorField.setPreferredSize(textFieldDimension);
+                stats.add(ioErrorField);
 
                 frame.getContentPane().add(stats, BorderLayout.PAGE_START);
 
@@ -63,86 +73,112 @@ public class RegexGUI implements RegexUI{
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
             });
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
+        runUpdate = () -> {
+            try {
+                updateRace.acquire();
+                // JTextComponent.setText() and JTextArea.append() are thread safe
+                for(String file : toAppend) {
+                    fileList.append(file + "\n");
+                }
+                toAppend.clear();
+                this.matchingField.setText(Integer.toString(matching));
+                this.percentField.setText(Double.toString(percent));
+                this.meanField.setText(Double.toString(mean));
+                this.ioErrorField.setText(Integer.toString(ioError));
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                updateRace.release();
+            }
+        };
     }
 
-    //not thread safe asks method
-    String response;
+
+
     @Override
     public String ask(String message) {
+        String response = "";
         try {
-            SwingUtilities.invokeAndWait( () -> {
+            FutureTask<String> dialogTask = new FutureTask<>(() -> {
                 Object[] possibilities = {"T", "E", "R"};
-                response = (String) JOptionPane.showInputDialog(
+                return (String) JOptionPane.showInputDialog(
                         frame, message, "", JOptionPane.PLAIN_MESSAGE, null, possibilities, "T");
             });
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
+            SwingUtilities.invokeLater(dialogTask);
+            response = dialogTask.get();
+            if(response == null){
+                response = "";
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return response;
     }
 
-    String responsePath;
     @Override
     public String askPath() {
+        String response = "";
         try {
-            SwingUtilities.invokeAndWait( () -> {
+            FutureTask<String> dialogTask = new FutureTask<>(() -> {
                 JFileChooser fc = new JFileChooser();
                 fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 int selected = fc.showOpenDialog(frame);
                 if (selected == JFileChooser.APPROVE_OPTION) {
-                    responsePath = fc.getSelectedFile().getAbsolutePath();
+                    return fc.getSelectedFile().getAbsolutePath();
                 } else {
-                    responsePath = "/";
+                    return "/";
                 }
             });
+            SwingUtilities.invokeLater(dialogTask);
+            response = dialogTask.get();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return responsePath;
+        return response;
     }
 
-    String responseRegex;
     @Override
     public String askRegex() {
+        String response = "";
         Pattern pattern = null;
         while(pattern == null) {
             try {
-                SwingUtilities.invokeAndWait( () -> {
-                    responseRegex = (String) JOptionPane.showInputDialog(
-                            frame, "Insert Regex", "", JOptionPane.PLAIN_MESSAGE, null, null, "");
-                });
+                FutureTask<String> dialogTask = new FutureTask<>(() ->
+                        (String) JOptionPane.showInputDialog(
+                        frame, "Insert Regex", "", JOptionPane.PLAIN_MESSAGE, null, null, ""));
+                SwingUtilities.invokeLater(dialogTask);
+                response = dialogTask.get();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             try {
-                pattern = Pattern.compile(responseRegex);
+                pattern = Pattern.compile(response);
             } catch (Exception e) {}
         }
-        return responseRegex;
+        return response;
     }
 
-    String responseDepth;
     @Override
     public int askDepth() {
+        String response = "";
         int depth = -1;
         while(depth < 0) {
             try {
-                SwingUtilities.invokeAndWait(() -> {
-                    responseDepth = (String) JOptionPane.showInputDialog(
-                            frame, "Insert depth", "", JOptionPane.PLAIN_MESSAGE, null, null, "");
-                });
+                FutureTask<String> dialogTask = new FutureTask<>(() ->
+                        (String) JOptionPane.showInputDialog(
+                                frame, "Insert depth", "", JOptionPane.PLAIN_MESSAGE, null, null, ""));
+                SwingUtilities.invokeLater(dialogTask);
+                response = dialogTask.get();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             try {
-                depth = Integer.parseInt(responseDepth);
+                depth = Integer.parseInt(response);
                 if (depth < 0)
                     throw new IllegalArgumentException();
             } catch (Exception e) {}
@@ -152,33 +188,36 @@ public class RegexGUI implements RegexUI{
 
     @Override
     public void updateResult(List<String> files, double percent, double mean, int error) {
-        SwingUtilities.invokeLater( () -> {
+        try {
+            updateRace.acquire();
+            toAppend.addAll(files);
+            this.matching += files.size();
+            this.percent = percent;
+            this.mean = mean;
+            this.ioError = error;
 
-            for (String file: files) {
-                if(!showedFiles.contains(file)){
-                    showedFiles.add(file);
-                    fileList.append(file + "\n");
-                }
-            }
-            /*if(!files.isEmpty()) {
-                fileList.append(files.get(files.size() - 1) + "\n");
-            }*/
-            this.matching.setText(Integer.toString(files.size()));
-            this.percent.setText(Double.toString(percent));
-            this.mean.setText(Double.toString(mean));
-            this.ioError.setText(Integer.toString(error));
-        });
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            updateRace.release();
+        }
     }
 
     @Override
     public void start() {
         watch.start();
-        SwingUtilities.invokeLater( () -> fileList.append("Computation started\n") );
+        fileList.append("Computation started\n");
+        updateExecutor.scheduleAtFixedRate(runUpdate, 0, REFRESH_SLEEP, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void end() {
         watch.stop();
-        SwingUtilities.invokeLater( () -> fileList.append("Computation ended in " + watch.getTime() + "ms\n") );
+        try {
+            updateExecutor.shutdownNow();
+            updateExecutor.awaitTermination(Long.MAX_VALUE, SECONDS);
+        } catch (InterruptedException e) { }
+        runUpdate.run();
+        fileList.append("Computation ended in " + watch.getTime() + "ms\n");
     }
 }

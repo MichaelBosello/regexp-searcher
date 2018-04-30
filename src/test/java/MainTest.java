@@ -1,5 +1,6 @@
 import eventloop.VertxController;
 import forkjoin.ForkJoinController;
+import reactivestreams.RxController;
 import regex.RegexController;
 import regex.regexresult.Result;
 import org.junit.Test;
@@ -37,6 +38,11 @@ public class MainTest {
     @Test
     public void vertxTest() {
         regexTest( (regex, depth) -> new VertxController(new RegexCommandLineUI(), PATH, regex, depth));
+    }
+
+    @Test
+    public void rxTest() {
+        regexTest( (regex, depth) -> new RxController(new RegexCommandLineUI(), PATH, regex, depth));
     }
 
     private void regexTest(BiFunction<String, Integer, RegexController> controllerFabric){

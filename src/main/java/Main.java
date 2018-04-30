@@ -1,5 +1,6 @@
 import eventloop.VertxController;
 import forkjoin.ForkJoinController;
+import reactivestreams.RxController;
 import ui.RegexCommandLineUI;
 import ui.RegexGUI;
 import ui.RegexUI;
@@ -13,7 +14,7 @@ public class Main {
                 new VertxController(ui).start();
                 break;
             case "R":
-                new VertxController(ui).start();
+                new RxController(ui).start();
                 break;
             default:
                 new ForkJoinController(ui).start();

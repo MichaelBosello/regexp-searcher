@@ -161,7 +161,7 @@ public class RegexVerticle extends AbstractVerticle {
             }else{
                 result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
             }
-            ui.updateResult(result.getMatchingFiles(), result.matchingFilePercent(),
+            ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
                     result.matchMean(), result.getError());
             trackAsyncSpawn(fileMatches.getValue());
         }, failFuture);

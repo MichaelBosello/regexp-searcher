@@ -53,7 +53,7 @@ public class RegexCommandLineUI implements RegexUI{
     }
 
     @Override
-    public void updateResult(List<String> files, double percent, double mean, int error){
+    public void updateResult(List<String> files, double percent, double mean, int error) {
         System.out.println("updated result:");
         System.out.println("% of file with at least one matching: " + percent);
         System.out.println("mean of matches among files with matches: " + mean);

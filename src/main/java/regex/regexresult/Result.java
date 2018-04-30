@@ -6,6 +6,8 @@ public interface Result {
 
     List<String> getMatchingFiles();
 
+    List<String> getNotConsumedFiles();
+
     double matchingFilePercent();
 
     double matchMean();

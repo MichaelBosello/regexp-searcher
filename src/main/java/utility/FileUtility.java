@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.function.Consumer;
@@ -34,19 +33,19 @@ public class FileUtility {
 
     public static int countMatch(String regex, String file) throws IOException {
         int match = 0;
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(fromFile(file));
-        while (matcher.find()) {
-            match++;
+        try (FileInputStream input = new FileInputStream(file)) {
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(fromFile(input));
+            while (matcher.find()) {
+                match++;
+            }
         }
         return match;
     }
 
-    private static CharSequence fromFile(String filename) throws IOException {
-        FileInputStream input = new FileInputStream(filename);
+    private static CharSequence fromFile(FileInputStream input) throws IOException {
         FileChannel channel = input.getChannel();
         ByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, (int)channel.size());
-        CharBuffer charBuffer = Charset.forName("8859_1").newDecoder().decode(byteBuffer);
-        return charBuffer;
+        return Charset.forName("8859_1").newDecoder().decode(byteBuffer);
     }
 }

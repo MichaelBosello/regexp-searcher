@@ -11,11 +11,11 @@ import static utility.FileUtility.walkDirectory;
 
 public class RegexWalkerAction extends RecursiveAction {
 
-    private final boolean DEBUG = false;
-    private File folder;
-    private String regex;
-    private Result collector;
-    private int depth;
+    protected final boolean DEBUG = false;
+    protected File folder;
+    protected String regex;
+    protected Result collector;
+    protected int depth;
 
     public RegexWalkerAction(String path, String regex, Result collector, int depth) {
         this.folder = new File(path);
@@ -33,14 +33,22 @@ public class RegexWalkerAction extends RecursiveAction {
                 if(DEBUG)
                     System.out.println("[DEBUG] spawn new directory fork with path: "
                             + directory.getPath() + " depth: " + subDepth );
-                forks.add(new RegexWalkerAction(directory.getPath(), regex, collector, subDepth));
+                forks.add(newWalker(directory.getPath(), subDepth));
             }
         }, (file) -> {
             if(DEBUG)
                 System.out.println("[DEBUG] spawn new file fork with filepath: "
                         + file.getPath() );
-            forks.add(new CountRegexInFileAction(file.getPath(), regex, collector));
+            forks.add(newAnalyzer(file.getPath()));
         });
         invokeAll(forks);
+    }
+
+    protected RegexWalkerAction newWalker(String subPath, int subDepth){
+        return new RegexWalkerAction(subPath, regex, collector, subDepth);
+    }
+
+    protected CountRegexInFileAction newAnalyzer(String subPath){
+        return new CountRegexInFileAction(subPath , regex, collector);
     }
 }

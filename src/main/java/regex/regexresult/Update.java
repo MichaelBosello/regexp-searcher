@@ -6,6 +6,8 @@ public interface Update {
 
     List<String> getFileList();
 
+    List<String> getNotConsumedFiles();
+
     double getPercent();
 
     double getMean();

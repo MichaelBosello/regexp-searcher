@@ -11,6 +11,7 @@ public class SearchingResult implements Result {
     private final static boolean DEBUG = false;
     private Semaphore updateEvent = null;
     private List<String> matchingFiles = new ArrayList<>();
+    private List<String> notConsumed = new ArrayList<>();
     private int analyzedFile = 0;
     private int totalMatches = 0;
     private int exception = 0;
@@ -23,7 +24,12 @@ public class SearchingResult implements Result {
 
     @Override
     public synchronized List<String> getMatchingFiles() {
-        return new ArrayList(matchingFiles);
+        return new ArrayList<>(matchingFiles);
+    }
+
+    @Override
+    public synchronized List<String> getNotConsumedFiles() {
+        return new ArrayList<>(notConsumed);
     }
 
     @Override
@@ -43,12 +49,15 @@ public class SearchingResult implements Result {
 
     @Override
     public synchronized Update getUpdate(){
-        return new UpdateStruct(getMatchingFiles(), matchingFilePercent(), matchMean(), getError());
+        Update update = new UpdateStruct(getMatchingFiles(), getNotConsumedFiles(), matchingFilePercent(), matchMean(), getError());
+        notConsumed.clear();
+        return update;
     }
 
     @Override
     public synchronized void addMatchingFile(String file, int matches){
         matchingFiles.add(file);
+        notConsumed.add(file);
         totalMatches += matches;
         incrementAnalyzedFile();
     }
