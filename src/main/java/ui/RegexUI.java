@@ -13,7 +13,7 @@ public interface RegexUI {
 
     int askDepth();
 
-    void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error);
+    void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error) throws InterruptedException;
 
     void start();
 

@@ -45,23 +45,34 @@ public class ForkJoinController implements RegexController {
         //result.addObserver(ui :: updateResult); //first attempt with observer pattern
 
         updateExecutor.execute(() -> {
+            Update update;
             boolean interrupted = false;
             while( (!Thread.currentThread().isInterrupted() && !interrupted)
                     || updateEvent.availablePermits() > 0 ) {
-                if(DEBUG){
+                if(DEBUG)
                     System.out.println("Update while isInterrupted: " + Thread.currentThread().isInterrupted() +
                                         " permits: " + updateEvent.availablePermits());
-                }
                 try {
                     updateEvent.acquire();
                     if(DEBUG)
-                    System.out.println("updateEvent acquired");
-                    Update update = result.getUpdate();
-                    ui.updateResult(update.getNotConsumedFiles(), update.getPercent(), update.getMean(), update.getError());
+                        System.out.println("updateEvent acquired");
+                    update = result.getUpdate();
+                    try {
+                        ui.updateResult(update.getNotConsumedFiles(), update.getPercent(), update.getMean(), update.getError());
+                    } catch (InterruptedException e) {
+                        boolean guiInterrupted = true;
+                        while(guiInterrupted){
+                            try {
+                                ui.updateResult(update.getNotConsumedFiles(), update.getPercent(), update.getMean(), update.getError());
+                                guiInterrupted = false;
+                            } catch (InterruptedException e1){}
+                        }
+                        throw new InterruptedException();
+                    }
                 } catch (InterruptedException e) {
                     interrupted = true;
                     if(DEBUG)
-                        System.out.println("interrupted exception");
+                        System.out.println("interrupted exception " + e);
                 }
             }
         });

@@ -82,21 +82,17 @@ public class RegexGUI implements RegexUI{
         runUpdate = () -> {
             try {
                 updateRace.acquire();
-                // JTextComponent.setText() and JTextArea.append() are thread safe
-                for(String file : toAppend) {
-                    fileList.append(file + "\n");
-                }
-                toAppend.clear();
-                this.matchingField.setText(Integer.toString(matching));
-                this.percentField.setText(Double.toString(percent));
-                this.meanField.setText(Long.toString(mean.getKey()) + "." + Long.toString(mean.getValue()));
-                this.ioErrorField.setText(Integer.toString(ioError));
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                updateRace.release();
+            } catch (InterruptedException e) { e.printStackTrace(); }
+            // JTextComponent.setText() and JTextArea.append() are thread safe
+            for (String file : toAppend) {
+                fileList.append(file + "\n");
             }
+            toAppend.clear();
+            this.matchingField.setText(Integer.toString(matching));
+            this.percentField.setText(Double.toString(percent));
+            this.meanField.setText(Long.toString(mean.getKey()) + "." + Long.toString(mean.getValue()));
+            this.ioErrorField.setText(Integer.toString(ioError));
+            updateRace.release();
         };
     }
 
@@ -189,20 +185,14 @@ public class RegexGUI implements RegexUI{
     }
 
     @Override
-    public void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error) {
-        try {
-            updateRace.acquire();
-            toAppend.addAll(files);
-            this.matching += files.size();
-            this.percent = percent;
-            this.mean = mean;
-            this.ioError = error;
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            updateRace.release();
-        }
+    public void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error) throws InterruptedException{
+        updateRace.acquire();
+        toAppend.addAll(files);
+        this.matching += files.size();
+        this.percent = percent;
+        this.mean = mean;
+        this.ioError = error;
+        updateRace.release();
     }
 
     @Override

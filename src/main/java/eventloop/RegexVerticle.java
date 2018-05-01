@@ -167,8 +167,12 @@ public class RegexVerticle extends AbstractVerticle {
             }else{
                 result.addMatchingFile(fileMatches.getKey().getFilename(), fileMatches.getKey().getMatch());
             }
-            ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
-                    result.matchMean(), result.getError());
+            try {
+                ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
+                        result.matchMean(), result.getError());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             trackAsyncSpawn(fileMatches.getValue());
         }, failFuture);
         return fileAnalysis;
