@@ -29,7 +29,7 @@ public class CountRegexInFileAction extends RecursiveAction {
     @Override
     protected void compute() {
         try {
-            int match = countMatch(regex, file);
+            long match = countMatch(regex, file);
             if(match > 0){
                 collector.addMatchingFile(file, match);
             } else {

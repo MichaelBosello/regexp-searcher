@@ -5,8 +5,10 @@ import utility.StopWatch;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.AbstractMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
@@ -22,7 +24,7 @@ public class RegexGUI implements RegexUI{
     private int ioError = 0;
     private int matching = 0;
     private double percent = 0;
-    private double mean = 0;
+    private Map.Entry<Long, Long> mean = new AbstractMap.SimpleEntry<>(0L,0L);
     private StopWatch watch = new MillisecondStopWatch();
     private JFrame frame;
     private JTextField matchingField;
@@ -87,7 +89,7 @@ public class RegexGUI implements RegexUI{
                 toAppend.clear();
                 this.matchingField.setText(Integer.toString(matching));
                 this.percentField.setText(Double.toString(percent));
-                this.meanField.setText(Double.toString(mean));
+                this.meanField.setText(Long.toString(mean.getKey()) + "." + Long.toString(mean.getValue()));
                 this.ioErrorField.setText(Integer.toString(ioError));
 
             } catch (InterruptedException e) {
@@ -187,7 +189,7 @@ public class RegexGUI implements RegexUI{
     }
 
     @Override
-    public void updateResult(List<String> files, double percent, double mean, int error) {
+    public void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error) {
         try {
             updateRace.acquire();
             toAppend.addAll(files);

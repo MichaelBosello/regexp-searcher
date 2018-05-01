@@ -31,8 +31,8 @@ public class FileUtility {
         }
     }
 
-    public static int countMatch(String regex, String file) throws IOException {
-        int match = 0;
+    public static long countMatch(String regex, String file) throws IOException {
+        long match = 0;
         try (FileInputStream input = new FileInputStream(file)) {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher = pattern.matcher(fromFile(input));

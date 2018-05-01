@@ -1,7 +1,9 @@
 package regex.regexresult;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -13,7 +15,7 @@ public class SearchingResult implements Result {
     private List<String> matchingFiles = new ArrayList<>();
     private List<String> notConsumed = new ArrayList<>();
     private int analyzedFile = 0;
-    private int totalMatches = 0;
+    private long totalMatches = 0;
     private int exception = 0;
 
     public SearchingResult() {}
@@ -29,7 +31,9 @@ public class SearchingResult implements Result {
 
     @Override
     public synchronized List<String> getNotConsumedFiles() {
-        return new ArrayList<>(notConsumed);
+        List<String> notConsumedTmp = new ArrayList<>(notConsumed);
+        notConsumed.clear();
+        return notConsumedTmp;
     }
 
     @Override
@@ -38,8 +42,10 @@ public class SearchingResult implements Result {
     }
 
     @Override
-    public synchronized double matchMean(){
-        return matchingFiles.size() == 0 ? 0 : (double) totalMatches/matchingFiles.size();
+    public synchronized Map.Entry<Long, Long> matchMean(){
+        long quotient = matchingFiles.size() == 0 ? 0 : totalMatches/matchingFiles.size();
+        long remainder = matchingFiles.size() == 0 ? 0 : totalMatches%matchingFiles.size();
+        return new AbstractMap.SimpleEntry<>(quotient,remainder);
     }
 
     @Override
@@ -50,12 +56,11 @@ public class SearchingResult implements Result {
     @Override
     public synchronized Update getUpdate(){
         Update update = new UpdateStruct(getMatchingFiles(), getNotConsumedFiles(), matchingFilePercent(), matchMean(), getError());
-        notConsumed.clear();
         return update;
     }
 
     @Override
-    public synchronized void addMatchingFile(String file, int matches){
+    public synchronized void addMatchingFile(String file, long matches){
         matchingFiles.add(file);
         notConsumed.add(file);
         totalMatches += matches;
@@ -106,7 +111,7 @@ public class SearchingResult implements Result {
         if(observers.size() > 0) {
             List<String> fileList = getMatchingFiles();
             double percent = matchingFilePercent();
-            double mean = matchMean();
+            Map.Entry<Long, Long> mean = matchMean();
             for (WalkObserver observer : observers) {
                 if (updateExecutor == null) {
                     updateExecutor = Executors.newSingleThreadExecutor();

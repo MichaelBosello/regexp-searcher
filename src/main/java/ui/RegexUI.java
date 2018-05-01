@@ -1,6 +1,7 @@
 package ui;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RegexUI {
 
@@ -12,7 +13,7 @@ public interface RegexUI {
 
     int askDepth();
 
-    void updateResult(List<String> files, double percent, double mean, int error);
+    void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error);
 
     void start();
 

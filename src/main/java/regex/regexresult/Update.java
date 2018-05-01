@@ -1,6 +1,7 @@
 package regex.regexresult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Update {
 
@@ -10,7 +11,7 @@ public interface Update {
 
     double getPercent();
 
-    double getMean();
+    Map.Entry<Long, Long> getMean();
 
     int getError();
 }

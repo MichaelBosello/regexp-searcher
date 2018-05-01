@@ -1,6 +1,7 @@
 package regex.regexresult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Result {
 
@@ -10,13 +11,13 @@ public interface Result {
 
     double matchingFilePercent();
 
-    double matchMean();
+    Map.Entry<Long, Long> matchMean();
 
     int getError();
 
     Update getUpdate();
 
-    void addMatchingFile(String file, int matches);
+    void addMatchingFile(String file, long matches);
 
     void addNonMatchingFile(String file);
 

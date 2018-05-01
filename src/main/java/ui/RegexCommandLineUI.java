@@ -4,6 +4,7 @@ import utility.MillisecondStopWatch;
 import utility.StopWatch;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -53,10 +54,10 @@ public class RegexCommandLineUI implements RegexUI{
     }
 
     @Override
-    public void updateResult(List<String> files, double percent, double mean, int error) {
+    public void updateResult(List<String> files, double percent, Map.Entry<Long, Long> mean, int error) {
         System.out.println("updated result:");
         System.out.println("% of file with at least one matching: " + percent);
-        System.out.println("mean of matches among files with matches: " + mean);
+        System.out.println("mean of matches among files with matches: " + mean.getKey() + "." + mean.getValue());
         System.out.println("IO errors: " + error);
         System.out.println("File matching list:");
         files.forEach(System.out::println);

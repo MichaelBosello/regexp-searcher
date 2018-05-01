@@ -1,15 +1,16 @@
 package regex.regexresult;
 
 import java.util.List;
+import java.util.Map;
 
 public class UpdateStruct implements Update {
     List<String> fileList;
     List<String> notConsumed;
     double percent;
-    double mean;
+    Map.Entry<Long, Long> mean;
     int error;
 
-    public UpdateStruct(List<String> fileList, List<String> notConsumed, double percent, double mean, int error) {
+    public UpdateStruct(List<String> fileList, List<String> notConsumed, double percent, Map.Entry<Long, Long> mean, int error) {
         this.fileList = fileList;
         this.notConsumed = notConsumed;
         this.percent = percent;
@@ -30,7 +31,7 @@ public class UpdateStruct implements Update {
         return percent;
     }
     @Override
-    public double getMean() {
+    public Map.Entry<Long, Long> getMean() {
         return mean;
     }
     @Override

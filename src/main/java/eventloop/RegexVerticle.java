@@ -3,7 +3,6 @@ package eventloop;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import regex.regexresult.Result;
-import regex.regexresult.Update;
 import ui.RegexUI;
 
 import java.io.File;
@@ -129,12 +128,12 @@ public class RegexVerticle extends AbstractVerticle {
             final int myself = parent + 1;
             if(DEBUG)
                 System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
-            Entry<String, Integer> fileMatch;
+            Entry<String, Long> fileMatch;
             try {
-                int match = countMatch(regex, file);
+                long match = countMatch(regex, file);
                 fileMatch = new SimpleEntry<>(file, match);
             } catch (IOException e) {
-                fileMatch = new SimpleEntry<>(file, IO_ERROR);
+                fileMatch = new SimpleEntry<>(file, (long) IO_ERROR);
             }
             if(DEBUG)
                 System.out.println("file analysis completed " + Thread.currentThread().getName());
@@ -152,11 +151,11 @@ public class RegexVerticle extends AbstractVerticle {
         return walker;
     }
 
-    private Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
+    private Future<Entry<Entry<String, Long>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
         /*
          *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
          * */
-        Future<Entry<Entry<String, Integer>, AsyncSpawnTracker>> fileAnalysis = Future.future();
+        Future<Entry<Entry<String, Long>, AsyncSpawnTracker>> fileAnalysis = Future.future();
         fileAnalysis.compose( fileMatches -> {
             if(DEBUG)
                 System.out.println("callback from file analysis " + Thread.currentThread().getName() +
@@ -168,9 +167,8 @@ public class RegexVerticle extends AbstractVerticle {
             }else{
                 result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
             }
-            Update update = result.getUpdate();
-            ui.updateResult(update.getNotConsumedFiles(), update.getPercent(),
-                    update.getMean(), update.getError());
+            ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
+                    result.matchMean(), result.getError());
             trackAsyncSpawn(fileMatches.getValue());
         }, failFuture);
         return fileAnalysis;

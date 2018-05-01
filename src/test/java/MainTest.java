@@ -57,7 +57,7 @@ public class MainTest {
                 assertEquals("PERCENT, REGEX: " + REGEX[regexIndex] + " depth " + depth,
                         (double) 1 / TOTAL_FILE , result.matchingFilePercent(), 0.001);
                 assertEquals("MEAN, REGEX: " + REGEX[regexIndex] + " depth " + depth,
-                        (double) RESULT[regexIndex], result.matchMean(), 0.001);
+                        (double) RESULT[regexIndex], result.matchMean().getKey(), 0.001);
             }
     }
 }
