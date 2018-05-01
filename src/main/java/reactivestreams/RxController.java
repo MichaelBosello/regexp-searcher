@@ -11,6 +11,7 @@ import java.util.concurrent.Semaphore;
 
 public class RxController implements RegexController {
 
+    private final static boolean DEBUG = false;
     private Result result = new SearchingResult();
     private RegexUI ui;
     private String path;
@@ -41,6 +42,8 @@ public class RxController implements RegexController {
         ui.start();
         ConnectableFlowable<Update> matchObservable = new RegexStream(path, regex, result, depth).matchStream().publish();
         matchObservable.subscribe((update) -> {
+            if(DEBUG)
+                System.out.println("subscribe action from: " + Thread.currentThread().getName());
             ui.updateResult(update.getNotConsumedFiles(),update.getPercent(),update.getMean(),update.getError());
         },(Throwable t) -> {
             System.out.println("error  " + t);

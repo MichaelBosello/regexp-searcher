@@ -41,6 +41,7 @@ public class FileUtility {
     /*
      *
      *      *** Out of memory problem with very large graph ***
+     *      ***        4 times faster                       ***
      *
      * Thanks to:
      * https://www.java-tips.org/java-se-tips-100019/37-java-util-regex/1716-how-to-apply-regular-expressions-on-the-contents-of-a-file.html
