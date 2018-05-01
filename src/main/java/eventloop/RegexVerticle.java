@@ -18,7 +18,7 @@ import static utility.FileUtility.walkDirectory;
 
 public class RegexVerticle extends AbstractVerticle {
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final static int IO_ERROR = -1;
     private RegexUI ui;
     private Result result;
@@ -128,12 +128,12 @@ public class RegexVerticle extends AbstractVerticle {
             final int myself = parent + 1;
             if(DEBUG)
                 System.out.println("File analysis async execution by: " + Thread.currentThread().getName());
-            Entry<String, Long> fileMatch;
+            fileWithMatch fileMatch;
             try {
                 long match = countMatch(regex, file);
-                fileMatch = new SimpleEntry<>(file, match);
+                fileMatch = new fileWithMatch(file, match);
             } catch (IOException e) {
-                fileMatch = new SimpleEntry<>(file, (long) IO_ERROR);
+                fileMatch = new fileWithMatch(file, (long) IO_ERROR);
             }
             if(DEBUG)
                 System.out.println("file analysis completed " + Thread.currentThread().getName());
@@ -151,21 +151,21 @@ public class RegexVerticle extends AbstractVerticle {
         return walker;
     }
 
-    private Future<Entry<Entry<String, Long>, AsyncSpawnTracker>> composeFileAnalysisFuture(){
+    private Future<Entry<fileWithMatch, AsyncSpawnTracker>> composeFileAnalysisFuture(){
         /*
          *   result not as monitor but as data structure: used only by event loop (And from JUnit at end)
          * */
-        Future<Entry<Entry<String, Long>, AsyncSpawnTracker>> fileAnalysis = Future.future();
+        Future<Entry<fileWithMatch, AsyncSpawnTracker>> fileAnalysis = Future.future();
         fileAnalysis.compose( fileMatches -> {
             if(DEBUG)
                 System.out.println("callback from file analysis " + Thread.currentThread().getName() +
-                                    "for file: " + fileMatches.getKey().getKey());
-            if(fileMatches.getKey().getValue() == IO_ERROR){
+                                    "for file: " + fileMatches.getKey().getFilename());
+            if(fileMatches.getKey().getMatch() == IO_ERROR){
                 result.incrementIOException();
-            } else if(fileMatches.getKey().getValue() == 0){
-                result.addNonMatchingFile(fileMatches.getKey().getKey());
+            } else if(fileMatches.getKey().getMatch() == 0){
+                result.addNonMatchingFile(fileMatches.getKey().getFilename());
             }else{
-                result.addMatchingFile(fileMatches.getKey().getKey(), fileMatches.getKey().getValue());
+                result.addMatchingFile(fileMatches.getKey().getFilename(), fileMatches.getKey().getMatch());
             }
             ui.updateResult(result.getNotConsumedFiles(), result.matchingFilePercent(),
                     result.matchMean(), result.getError());
@@ -234,4 +234,23 @@ public class RegexVerticle extends AbstractVerticle {
             return asyncSpawn;
         }
     }
+
+    private class fileWithMatch{
+        private final String filename;
+        private final long match;
+
+        public fileWithMatch(String filename, long match) {
+            this.filename = filename;
+            this.match = match;
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public long getMatch() {
+            return match;
+        }
+    }
 }
+
