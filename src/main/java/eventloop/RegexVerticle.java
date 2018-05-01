@@ -50,7 +50,7 @@ public class RegexVerticle extends AbstractVerticle {
     @Override
     public void start() {
         failFuture.setHandler(res -> {
-            System.out.println("Something failed.");
+            System.out.println("Something failed. " + res.cause());
         });
 
         if(askUI){

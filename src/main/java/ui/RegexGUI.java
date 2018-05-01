@@ -16,7 +16,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RegexGUI implements RegexUI{
 
-    private final static int REFRESH_SLEEP = 250;
+    private final static int REFRESH_SLEEP = 200;
     private ScheduledExecutorService updateExecutor = Executors.newSingleThreadScheduledExecutor();
     private Runnable runUpdate;
     private Semaphore updateRace = new Semaphore(1);
