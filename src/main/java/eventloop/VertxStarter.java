@@ -9,17 +9,17 @@ import ui.RegexUI;
 
 import java.util.concurrent.Semaphore;
 
-public class VertxController implements RegexController {
+public class VertxStarter implements RegexController {
 
     private final Result result = new SearchingResult();
     private final Verticle verticle;
     private final Semaphore endEvent = new Semaphore(0);
 
-    public VertxController(RegexUI ui) {
+    public VertxStarter(RegexUI ui) {
         verticle = new RegexVerticle(ui, result, endEvent);
     }
 
-    public VertxController(RegexUI ui, String path, String regex, int depth) {
+    public VertxStarter(RegexUI ui, String path, String regex, int depth) {
         verticle = new RegexVerticle(ui, result, endEvent, path, regex, depth);
     }
 

@@ -1,4 +1,4 @@
-import eventloop.VertxController;
+import eventloop.VertxStarter;
 import forkjoin.ForkJoinController;
 import reactivestreams.RxController;
 import regex.RegexController;
@@ -37,7 +37,7 @@ public class MainTest {
 
     @Test
     public void vertxTest() {
-        regexTest( (regex, depth) -> new VertxController(new RegexCommandLineUI(), PATH, regex, depth));
+        regexTest( (regex, depth) -> new VertxStarter(new RegexCommandLineUI(), PATH, regex, depth));
     }
 
     @Test
