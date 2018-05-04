@@ -11,7 +11,7 @@ import static utility.FileUtility.walkDirectory;
 
 public class RegexWalkerAction extends RecursiveAction {
 
-    protected final boolean DEBUG = false;
+    protected static final boolean DEBUG = false;
     protected File folder;
     protected String regex;
     protected Result collector;
