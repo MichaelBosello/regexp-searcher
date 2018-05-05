@@ -8,7 +8,7 @@ public class Main {
 
     public static void main(String args[]) {
         RegexUI ui = new RegexGUI();
-        switch(ui.ask("Select computation method:\n(T) Task [Default]\n(E) Eventloop\n(R)Reactive Stream")){
+        switch(ui.askMethod()){
             case "E":
                 new VertxStarter(ui).start();
                 break;

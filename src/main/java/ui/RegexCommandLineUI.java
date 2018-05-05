@@ -20,6 +20,12 @@ public class RegexCommandLineUI implements RegexUI{
     }
 
     @Override
+    public String askMethod(){
+        System.out.println("Select computation method:\n(T) Task [Default]\n(E) Eventloop\n(R)Reactive Stream");
+        return console.nextLine();
+    }
+
+    @Override
     public String askPath(){
         return ask("Insert base path");
     }

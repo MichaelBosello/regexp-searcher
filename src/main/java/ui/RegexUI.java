@@ -7,6 +7,8 @@ public interface RegexUI {
 
     String ask(String message);
 
+    String askMethod();
+
     String askPath();
 
     String askRegex();

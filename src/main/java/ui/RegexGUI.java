@@ -96,16 +96,29 @@ public class RegexGUI implements RegexUI{
         };
     }
 
-
-
     @Override
     public String ask(String message) {
+        String response = "";
+        FutureTask<String> dialogTask = new FutureTask<>(() ->
+                (String) JOptionPane.showInputDialog(
+                        frame, message, "", JOptionPane.PLAIN_MESSAGE, null, null, ""));
+        SwingUtilities.invokeLater(dialogTask);
+        try {
+            response = dialogTask.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    @Override
+    public String askMethod() {
         String response = "";
         try {
             FutureTask<String> dialogTask = new FutureTask<>(() -> {
                 Object[] possibilities = {"T", "E", "R"};
                 return (String) JOptionPane.showInputDialog(
-                        frame, message, "", JOptionPane.PLAIN_MESSAGE, null, possibilities, "T");
+                        frame, "Select computation method:\n(T) Task [Default]\n(E) Eventloop\n(R)Reactive Stream", "", JOptionPane.PLAIN_MESSAGE, null, possibilities, "T");
             });
             SwingUtilities.invokeLater(dialogTask);
             response = dialogTask.get();
